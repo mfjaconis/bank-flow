@@ -1,4 +1,4 @@
-package com.jaconis;
+package com.jaconis.bankflow;
 
 public class Main {
     public static void main(String[] args) {
