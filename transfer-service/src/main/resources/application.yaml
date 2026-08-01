@@ -1,0 +1,13 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: transfer-service
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
