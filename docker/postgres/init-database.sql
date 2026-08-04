@@ -1,0 +1,3 @@
+CREATE DATABASE auth;
+CREATE DATABASE accounts;
+CREATE DATABASE transfers;

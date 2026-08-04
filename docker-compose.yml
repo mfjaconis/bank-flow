@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bankflow-postgres
+    environment:
+      POSTGRES_USER: bankflow
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-database.sql:/docker-entrypoint-initdb.d/init-database.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U bankflow" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: bankflow-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: bankflow
+      RABBITMQ_DEFAULT_PASS: bankflow
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+   postgres_data:
