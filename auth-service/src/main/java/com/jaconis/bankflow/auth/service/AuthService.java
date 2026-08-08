@@ -7,6 +7,7 @@ import com.jaconis.bankflow.auth.entity.User;
 import com.jaconis.bankflow.auth.exception.EmailAlreadyRegisteredException;
 import com.jaconis.bankflow.auth.exception.InvalidCredentialsException;
 import com.jaconis.bankflow.auth.repository.UserRepository;
+import com.jaconis.bankflow.auth.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +16,12 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -33,7 +36,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        return new AuthResponse("User registered", user.getEmail());
+        return new AuthResponse("User registered", user.getEmail(), null);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -44,6 +47,7 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        return new AuthResponse("Login realizado com sucesso!", user.getEmail());
+        String token = jwtService.generateToken(user);
+        return new AuthResponse("Login realizado com sucesso!", user.getEmail(), token);
     }
 }
