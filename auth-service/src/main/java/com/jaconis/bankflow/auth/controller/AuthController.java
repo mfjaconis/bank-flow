@@ -1,6 +1,7 @@
 package com.jaconis.bankflow.auth.controller;
 
 import com.jaconis.bankflow.auth.dto.AuthResponse;
+import com.jaconis.bankflow.auth.dto.LoginRequest;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -21,5 +22,10 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }
