@@ -1,9 +1,16 @@
 package com.jaconis.bankflow.auth.controller;
 
 import com.jaconis.bankflow.auth.dto.AuthResponse;
+import com.jaconis.bankflow.auth.dto.ErrorResponse;
 import com.jaconis.bankflow.auth.dto.LoginRequest;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +25,35 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(summary = "Registrar usuário")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Criado"),
+            @ApiResponse(responseCode = "409", description = "E-mail já cadastrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validação",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+
+
+
+    @SecurityRequirements
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
+    @Operation(summary = "Login")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OK"),
+            @ApiResponse(responseCode = "401", description = "Credenciais inválidas",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validação",
+                content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+
+
+    @SecurityRequirements
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
