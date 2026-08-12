@@ -1,0 +1,12 @@
+app:
+  jwt:
+    secret: test-secret-key-at-least-32-bytes-long!!
+    expiration-ms: 900000
+  rate-limit:
+    enabled: false
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.data.redis.autoconfigure.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration

@@ -1,6 +1,8 @@
 package com.jaconis.bankflow.auth.config;
 
 import com.jaconis.bankflow.auth.security.JwtAuthenticationFilter;
+import com.jaconis.bankflow.auth.security.RateLimitFilter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,9 +17,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectProvider<RateLimitFilter> rateLimitFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            ObjectProvider<RateLimitFilter> rateLimitFilter
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     @Bean
@@ -35,6 +42,11 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        RateLimitFilter filter = rateLimitFilter.getIfAvailable();
+        if (filter != null) {
+            http.addFilterBefore(filter, JwtAuthenticationFilter.class);
+        }
 
         return http.build();
     }
