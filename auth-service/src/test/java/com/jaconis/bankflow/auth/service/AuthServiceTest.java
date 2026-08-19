@@ -2,10 +2,12 @@ package com.jaconis.bankflow.auth.service;
 
 import com.jaconis.bankflow.auth.dto.AuthResponse;
 import com.jaconis.bankflow.auth.dto.LoginRequest;
+import com.jaconis.bankflow.auth.dto.MeResponse;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.entity.User;
 import com.jaconis.bankflow.auth.exception.EmailAlreadyRegisteredException;
 import com.jaconis.bankflow.auth.exception.InvalidCredentialsException;
+import com.jaconis.bankflow.auth.exception.UserNotFoundException;
 import com.jaconis.bankflow.auth.repository.UserRepository;
 import com.jaconis.bankflow.auth.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -15,8 +17,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -108,5 +112,37 @@ class AuthServiceTest {
                 () -> authService.login(new LoginRequest("a@b.com", "123456")));
 
         verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void me_ok_returnsUserInfo() {
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        User user = new User();
+        ReflectionTestUtils.setField(user, "id", userId);
+        user.setEmail("a@b.com");
+        user.setPassword("hash");
+        user.setRole("USER");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MeResponse res = authService.me(userId.toString());
+
+        assertEquals(userId, res.id());
+        assertEquals("a@b.com", res.email());
+        assertEquals("USER", res.role());
+        assertEquals(user.getCreatedAt(), res.createdAt());
+    }
+
+    @Test
+    void me_whenUserNotFound_throwsUnauthorized() {
+        UUID userId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> authService.me(userId.toString()));
+    }
+
+    @Test
+    void me_whenUserIdInvalid_throwsUnauthorized() {
+        assertThrows(UserNotFoundException.class, () -> authService.me("not-a-uuid"));
     }
 }

@@ -2,14 +2,18 @@ package com.jaconis.bankflow.auth.service;
 
 import com.jaconis.bankflow.auth.dto.AuthResponse;
 import com.jaconis.bankflow.auth.dto.LoginRequest;
+import com.jaconis.bankflow.auth.dto.MeResponse;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.entity.User;
 import com.jaconis.bankflow.auth.exception.EmailAlreadyRegisteredException;
 import com.jaconis.bankflow.auth.exception.InvalidCredentialsException;
+import com.jaconis.bankflow.auth.exception.UserNotFoundException;
 import com.jaconis.bankflow.auth.repository.UserRepository;
 import com.jaconis.bankflow.auth.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -49,5 +53,19 @@ public class AuthService {
 
         String token = jwtService.generateToken(user);
         return new AuthResponse("Login realizado com sucesso!", user.getEmail(), token);
+    }
+
+    public MeResponse me(String userId) {
+        UUID id;
+        try {
+            id = UUID.fromString(userId);
+        } catch (IllegalArgumentException e) {
+            throw new UserNotFoundException();
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
+
+        return new MeResponse(user.getId(), user.getEmail(), user.getRole(), user.getCreatedAt());
     }
 }

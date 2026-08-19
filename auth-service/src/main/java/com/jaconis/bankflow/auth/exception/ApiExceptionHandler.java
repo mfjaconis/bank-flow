@@ -28,6 +28,20 @@ public class ApiExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse handleUserNotFound(
+            UserNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return new ErrorResponse(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+    }
+
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleEmailAlreadyRegistered(
