@@ -1,13 +1,33 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT_ACCOUNT_SERVICE:8081}
 
 spring:
   application:
     name: account-service
 
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/accounts}
+    username: ${DB_USERNAME:bankflow}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
 management:
   endpoints:
     web:
       exposure:
         include: health
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

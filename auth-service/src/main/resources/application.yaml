@@ -43,6 +43,9 @@ app:
     secret: ${JWT_SECRET:bankflow-local-dev-secret-key-32b!}
     expiration-ms: 900000
 
+  account-service:
+    base-url: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
+
   rate-limit:
     enabled: true
     capacity: 10

@@ -1,10 +1,12 @@
 package com.jaconis.bankflow.auth.service;
 
+import com.jaconis.bankflow.auth.client.AccountClient;
 import com.jaconis.bankflow.auth.dto.AuthResponse;
 import com.jaconis.bankflow.auth.dto.LoginRequest;
 import com.jaconis.bankflow.auth.dto.MeResponse;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.entity.User;
+import com.jaconis.bankflow.auth.exception.AccountProvisioningException;
 import com.jaconis.bankflow.auth.exception.EmailAlreadyRegisteredException;
 import com.jaconis.bankflow.auth.exception.InvalidCredentialsException;
 import com.jaconis.bankflow.auth.exception.UserNotFoundException;
@@ -39,20 +41,31 @@ class AuthServiceTest {
     PasswordEncoder passwordEncoder;
     @Mock
     JwtService jwtService;
+    @Mock
+    AccountClient accountClient;
     @InjectMocks
     AuthService authService;
 
     @Test
-    void register_ok_savesUserWithoutToken() {
+    void register_ok_savesUserAndCreatesAccount() {
+        UUID userId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        UUID accountId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
         when(userRepository.findByEmail("a@b.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("123456")).thenReturn("encoded-hash");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            ReflectionTestUtils.setField(user, "id", userId);
+            return user;
+        });
+        when(accountClient.createDefaultAccount(userId)).thenReturn(accountId);
 
         AuthResponse res = authService.register(new RegisterRequest("a@b.com", "123456"));
 
         assertEquals("User registered", res.message());
         assertEquals("a@b.com", res.email());
         assertNull(res.token());
+        assertEquals(accountId, res.accountId());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
@@ -60,6 +73,25 @@ class AuthServiceTest {
         assertEquals("a@b.com", saved.getEmail());
         assertEquals("encoded-hash", saved.getPassword());
         assertEquals("USER", saved.getRole());
+        verify(accountClient).createDefaultAccount(userId);
+    }
+
+    @Test
+    void register_whenAccountProvisioningFails_deletesUserAndThrows() {
+        UUID userId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        when(userRepository.findByEmail("a@b.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("123456")).thenReturn("encoded-hash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            ReflectionTestUtils.setField(user, "id", userId);
+            return user;
+        });
+        when(accountClient.createDefaultAccount(userId)).thenThrow(new AccountProvisioningException());
+
+        assertThrows(AccountProvisioningException.class,
+                () -> authService.register(new RegisterRequest("a@b.com", "123456")));
+
+        verify(userRepository).delete(any(User.class));
     }
 
     @Test
@@ -70,6 +102,7 @@ class AuthServiceTest {
                 () -> authService.register(new RegisterRequest("a@b.com", "123456")));
 
         verify(userRepository, never()).save(any());
+        verify(accountClient, never()).createDefaultAccount(any());
     }
 
     @Test
@@ -87,6 +120,7 @@ class AuthServiceTest {
         assertEquals("Login realizado com sucesso!", res.message());
         assertEquals("a@b.com", res.email());
         assertEquals("jwt-token", res.token());
+        assertNull(res.accountId());
     }
 
     @Test

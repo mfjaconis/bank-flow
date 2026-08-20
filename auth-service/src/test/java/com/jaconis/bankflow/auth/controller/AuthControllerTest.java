@@ -46,8 +46,9 @@ class AuthControllerTest {
 
     @Test
     void register_ok_returns201() throws Exception {
+        UUID accountId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         when(authService.register(any()))
-                .thenReturn(new AuthResponse("User registered", "a@b.com", null));
+                .thenReturn(new AuthResponse("User registered", "a@b.com", null, accountId));
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -57,6 +58,7 @@ class AuthControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("User registered"))
                 .andExpect(jsonPath("$.email").value("a@b.com"))
+                .andExpect(jsonPath("$.accountId").value(accountId.toString()))
                 .andExpect(jsonPath("$.token").doesNotExist());
     }
 
@@ -90,7 +92,7 @@ class AuthControllerTest {
     @Test
     void login_ok_returns200() throws Exception {
         when(authService.login(any()))
-                .thenReturn(new AuthResponse("Login realizado com sucesso!", "a@b.com", "token"));
+                .thenReturn(new AuthResponse("Login realizado com sucesso!", "a@b.com", "token", null));
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -99,7 +101,8 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("a@b.com"))
-                .andExpect(jsonPath("$.token").value("token"));
+                .andExpect(jsonPath("$.token").value("token"))
+                .andExpect(jsonPath("$.accountId").doesNotExist());
     }
 
     @Test

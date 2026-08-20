@@ -1,10 +1,12 @@
 package com.jaconis.bankflow.auth.service;
 
+import com.jaconis.bankflow.auth.client.AccountClient;
 import com.jaconis.bankflow.auth.dto.AuthResponse;
 import com.jaconis.bankflow.auth.dto.LoginRequest;
 import com.jaconis.bankflow.auth.dto.MeResponse;
 import com.jaconis.bankflow.auth.dto.RegisterRequest;
 import com.jaconis.bankflow.auth.entity.User;
+import com.jaconis.bankflow.auth.exception.AccountProvisioningException;
 import com.jaconis.bankflow.auth.exception.EmailAlreadyRegisteredException;
 import com.jaconis.bankflow.auth.exception.InvalidCredentialsException;
 import com.jaconis.bankflow.auth.exception.UserNotFoundException;
@@ -12,6 +14,7 @@ import com.jaconis.bankflow.auth.repository.UserRepository;
 import com.jaconis.bankflow.auth.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -21,13 +24,21 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AccountClient accountClient;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            AccountClient accountClient
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.accountClient = accountClient;
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         userRepository.findByEmail(request.email()).ifPresent(u -> {
             throw new EmailAlreadyRegisteredException();
@@ -38,9 +49,15 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole("USER");
 
-        userRepository.save(user);
+        User saved = userRepository.save(user);
 
-        return new AuthResponse("User registered", user.getEmail(), null);
+        try {
+            UUID accountId = accountClient.createDefaultAccount(saved.getId());
+            return new AuthResponse("User registered", saved.getEmail(), null, accountId);
+        } catch (AccountProvisioningException ex) {
+            userRepository.delete(saved);
+            throw ex;
+        }
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -52,7 +69,7 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user);
-        return new AuthResponse("Login realizado com sucesso!", user.getEmail(), token);
+        return new AuthResponse("Login realizado com sucesso!", user.getEmail(), token, null);
     }
 
     public MeResponse me(String userId) {
