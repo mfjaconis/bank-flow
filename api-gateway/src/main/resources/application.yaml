@@ -4,10 +4,49 @@ server:
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URI:http://localhost:8084}
+              predicates:
+                - Path=/auth/**
 
+            - id: account-service
+              uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
+              predicates:
+                - Path=/accounts/**
+
+            - id: transfer-service
+              uri: ${TRANSFER_SERVICE_URI:http://localhost:8082}
+              predicates:
+                - Path=/transfers/**
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  jwt:
+    # Default só para local; em prod use JWT_SECRET forte via env
+    secret: ${JWT_SECRET:bankflow-local-dev-secret-key-32b!}
+  rate-limit:
+    enabled: true
+    capacity: 100
+    refill-duration: 1m
 
 management:
   endpoints:
     web:
       exposure:
         include: health
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

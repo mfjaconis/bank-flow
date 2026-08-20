@@ -39,7 +39,8 @@ springdoc:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    # Default só para local; em prod use JWT_SECRET forte via env
+    secret: ${JWT_SECRET:bankflow-local-dev-secret-key-32b!}
     expiration-ms: 900000
 
   rate-limit:
