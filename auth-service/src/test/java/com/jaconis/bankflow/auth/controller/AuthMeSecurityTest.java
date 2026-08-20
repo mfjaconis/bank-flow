@@ -70,4 +70,34 @@ class AuthMeSecurityTest {
                 .andExpect(jsonPath("$.email").value("a@b.com"))
                 .andExpect(jsonPath("$.role").value("USER"));
     }
+
+    @Test
+    void me_withInvalidJwt_returns401() throws Exception {
+        String token = "invalid.jwt.token";
+        when(jwtService.isValid(token)).thenReturn(false);
+
+        mockMvc.perform(get("/auth/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Não autenticado"))
+                .andExpect(jsonPath("$.path").value("/auth/me"));
+    }
+
+    @Test
+    void me_withBlankBearerToken_returns401() throws Exception {
+        mockMvc.perform(get("/auth/me").header(HttpHeaders.AUTHORIZATION, "Bearer "))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Não autenticado"))
+                .andExpect(jsonPath("$.path").value("/auth/me"));
+    }
+
+    @Test
+    void me_withNonBearerAuthorization_returns401() throws Exception {
+        mockMvc.perform(get("/auth/me").header(HttpHeaders.AUTHORIZATION, "Basic dXNlcjpwYXNz"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Não autenticado"))
+                .andExpect(jsonPath("$.path").value("/auth/me"));
+    }
 }

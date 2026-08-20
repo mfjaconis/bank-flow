@@ -33,6 +33,7 @@ class JwtServiceTest {
         String token = jwtService.generateToken(user);
 
         assertEquals(user.getId().toString(), jwtService.extractSubject(token));
+        assertEquals("a@b.com", jwtService.extractEmail(token));
         assertEquals("USER", jwtService.extractRole(token));
         assertTrue(jwtService.isValid(token));
     }

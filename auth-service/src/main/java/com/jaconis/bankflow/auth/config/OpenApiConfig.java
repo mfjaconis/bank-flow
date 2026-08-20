@@ -10,15 +10,25 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenApiConfig {
+
+    private static final String BEARER = "bearerAuth";
+
     @Bean
     OpenAPI openAPI() {
         return new OpenAPI()
-                .info(new Info().title("Auth Service").version("1.0"))
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .components(new Components().addSecuritySchemes("bearerAuth",
+                .info(new Info()
+                        .title("Auth Service")
+                        .version("1.0")
+                        .description("""
+                                Autenticação do BankFlow: registro, login (JWT) e perfil do usuário autenticado.
+                                Rate limit em /auth/login e /auth/register (Bucket4j + Redis).
+                                """))
+                .addSecurityItem(new SecurityRequirement().addList(BEARER))
+                .components(new Components().addSecuritySchemes(BEARER,
                         new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")));
+                                .bearerFormat("JWT")
+                                .description("JWT emitido por POST /auth/login")));
     }
 }
